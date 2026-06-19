@@ -1,0 +1,84 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String     @id @default(cuid())
+  discordId     String     @unique
+  username      String
+  email         String?
+  avatar        String?
+  credits       Int        @default(0)
+  balance       Float      @default(0.0)
+  paypalEmail   String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  plugins       Plugin[]
+  transactions  Transaction[]
+  adWatches     AdWatch[]
+}
+
+model Plugin {
+  id            String     @id @default(cuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name          String
+  description   String
+  code          String     @db.Text
+  language      String     @default("java")
+  version       String     @default("1.0.0")
+  
+  downloads     Int        @default(0)
+  rating        Float      @default(0.0)
+  
+  isPublic      Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  reviews       Review[]
+}
+
+model Review {
+  id            String     @id @default(cuid())
+  pluginId      String
+  plugin        Plugin     @relation(fields: [pluginId], references: [id], onDelete: Cascade)
+  
+  rating        Int
+  comment       String?
+  createdAt     DateTime   @default(now())
+}
+
+model Transaction {
+  id            String     @id @default(cuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type          String     // "ad_watch", "paypal_withdrawal", "plugin_download"
+  amount        Float
+  description   String?
+  status        String     @default("pending") // pending, completed, failed
+  
+  paypalOrderId String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model AdWatch {
+  id            String     @id @default(cuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  adNetwork     String     // "google_adsense", "propeller_ads"
+  creditsEarned Int
+  watchedAt     DateTime   @default(now())
+}
